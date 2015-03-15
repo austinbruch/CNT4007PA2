@@ -34,6 +34,9 @@ public class Sender {
    // private File messageFile;
    private BufferedReader brFromInputFile;
 
+   // State for State Machine
+   private SenderEnum state;
+
 
    // Constructor
    public Sender(String networkURL, int networkPort, String messageFileName) {
@@ -47,6 +50,8 @@ public class Sender {
 
       // this.messageFile = null;
       this.brFromInputFile = null;
+
+      this.state = SenderEnum.SEND0;
    }
 
    // Setup Socket, Readers, Writers, etc.
@@ -135,8 +140,13 @@ public class Sender {
 
    // Start the sending process
    public void run() {
+      // Create and open all of the required connections
       this.initialize();
+
+      // Generate all of the packets that will be sent
       ArrayList<Packet> packets = this.convertMessageToPackets();
+
+      
 
    }
 
