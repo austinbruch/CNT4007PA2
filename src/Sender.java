@@ -125,7 +125,7 @@ public class Sender {
          p.setContent(tokenizer.nextToken());
          p.updateChecksum();
 
-         System.out.println(p);
+         // System.out.println(p);
 
          packets.add(p);
 

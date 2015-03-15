@@ -73,8 +73,7 @@ public class Packet {
       this.checksum = check;
    }
 
-   @Override
-   public String toString() {
+   public byte[] asByteArray() {
       byte[] stringBytes = this.content.getBytes();
       ByteBuffer bb = ByteBuffer.allocate(4);
       bb.putInt(this.checksum);
@@ -91,7 +90,14 @@ public class Packet {
       for (int i = 0; i < stringBytes.length; i++) {
          bytes[6 + i] = stringBytes[i];
       }
-      String toReturn = "Bytes: " + Arrays.toString(bytes) + "\n";
+
+      return bytes;
+   }
+
+   @Override
+   public String toString() {
+      
+      String toReturn = "Bytes: " + Arrays.toString(this.asByteArray()) + "\n";
       toReturn += "Sequence Number: " + this.sequenceNumber + "\n"; 
       toReturn += "Packet ID: " + this.packetID + "\n";
       toReturn += "Checksum: " + this.checksum + "\n";
