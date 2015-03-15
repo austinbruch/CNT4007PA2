@@ -37,6 +37,14 @@ public class Network {
       this.port = port;
    }
 
+   public Socket getSenderSocket() {
+      return this.senderSocket;
+   }
+
+   public Socket getReceiverSocket() {
+      return this.receiverSocket;
+   }
+
    private void initialize() {
       try {
          this.listenSocket = new ServerSocket(port);
@@ -64,10 +72,10 @@ public class Network {
 
          if (numberOfConnections == 0) {
             this.receiverSocket = socket; // connect the receiver first
-            receiverThread = new ReceiverThread(this, this.receiverSocket, this.senderSocket);
+            receiverThread = new ReceiverThread(this);
          } else if (numberOfConnections == 1) {
             this.senderSocket = socket; // connect the sender second
-            senderThread = new SenderThread(this, this.senderSocket, this.receiverSocket);
+            senderThread = new SenderThread(this);
             receiverThread.start();
             senderThread.start();
          }
@@ -77,7 +85,7 @@ public class Network {
       }
    }
 
-   private String getRandomNetworkAction() {
+   protected String getRandomNetworkAction() {
       Random random = new Random();
       String pass = "PASS", corrupt = "CORRUPT", drop = "DROP";
       String networkAction;

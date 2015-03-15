@@ -28,6 +28,36 @@ public class Packet {
       this.content = null;
    }
 
+   // Constructor used to create a Packet from a validated Byte Array
+   public Packet(byte[] bytes) {
+      if(bytes.length >=7) {
+         this.sequenceNumber = bytes[0];
+         this.packetID = bytes[1];
+         
+         byte[] checksumBytes = new byte[4];
+         checksumBytes[0] = bytes[2];
+         checksumBytes[1] = bytes[3];
+         checksumBytes[2] = bytes[4];
+         checksumBytes[3] = bytes[5];
+
+         this.checksum = ByteBuffer.wrap(checksumBytes).getInt();
+
+         byte[] contentBytes = new byte[bytes.length-6];
+         for (int i = 0; i < contentBytes.length; i++) {
+            contentBytes[i] = bytes[6 + i];
+         }
+
+         this.content = new String(contentBytes);
+
+      } else {
+         this.sequenceNumber = (byte) 0x0;
+         this.packetID = (byte) 0x0;
+         this.checksum = 0;
+         this.content = null;
+      }
+      
+   }
+
    // Getters and Setters
    public byte getSequenceNumber() {
       return this.sequenceNumber;

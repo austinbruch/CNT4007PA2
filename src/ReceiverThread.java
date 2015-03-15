@@ -23,10 +23,13 @@ public class ReceiverThread extends Thread {
    private BufferedReader bufferedReader;
    private DataOutputStream dataOutputStream;
 
-   public ReceiverThread(Network network, Socket receiverSocket, Socket senderSocket) {
+   public ReceiverThread(Network network) {
       this.network = network;
-      this.receiverSocket = receiverSocket;
-      this.senderSocket = senderSocket;
+   }
+
+   private void initialize() {
+      this.senderSocket = this.network.getSenderSocket();
+      this.receiverSocket = this.network.getReceiverSocket();
 
       try {
          this.bufferedReader = new BufferedReader(new InputStreamReader(this.receiverSocket.getInputStream()));
@@ -45,6 +48,8 @@ public class ReceiverThread extends Thread {
    @Override
    public void run() {
       System.out.println("Receiver started.");
+
+      this.initialize();
    }  
    
 }

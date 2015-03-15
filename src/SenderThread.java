@@ -23,10 +23,13 @@ public class SenderThread extends Thread {
    private BufferedReader bufferedReader;
    private DataOutputStream dataOutputStream;
 
-   public SenderThread(Network network, Socket senderSocket, Socket receiverSocket) {
+   public SenderThread(Network network) {
       this.network = network;
-      this.senderSocket = senderSocket;
-      this.receiverSocket = receiverSocket;
+   }
+
+   private void initialize() {
+      this.senderSocket = this.network.getSenderSocket();
+      this.receiverSocket = this.network.getReceiverSocket();
 
       try {
          this.bufferedReader = new BufferedReader(new InputStreamReader(this.senderSocket.getInputStream()));
@@ -45,6 +48,23 @@ public class SenderThread extends Thread {
    @Override
    public void run() {
       System.out.println("Sender started.");
+
+      this.initialize();
+
+      String inputFromSender = null;
+
+      try {
+         while((inputFromSender = this.bufferedReader.readLine()) != null) {
+            Packet packetFromSender = new Packet(inputFromSender.getBytes());
+            String networkAction = this.network.getRandomNetworkAction();
+            System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID() + ", " + networkAction);
+         }
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while trying to read from the Sender Socket.");
+      }
+
+      
+
 
 
    }  

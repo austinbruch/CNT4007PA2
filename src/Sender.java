@@ -37,6 +37,8 @@ public class Sender {
    // State for State Machine
    private SenderEnum state;
 
+   public static String CRLF = "\r\n";
+
 
    // Constructor
    public Sender(String networkURL, int networkPort, String messageFileName) {
@@ -146,8 +148,12 @@ public class Sender {
       // Generate all of the packets that will be sent
       ArrayList<Packet> packets = this.convertMessageToPackets();
 
-      
-
+      // TEST simply write the first packet as a string from the byte array representation of the packet
+      try {
+         this.dosToSocket.writeBytes(new String(packets.get(0).asByteArray()) + CRLF);
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while writing to the Network Socket.");
+      }
    }
 
    // Drive the Sender class
