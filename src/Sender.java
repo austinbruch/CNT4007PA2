@@ -2,7 +2,7 @@
  * @author Austin Bruch
  * CNT4007C Programming Assignment 2
  * Sender Class
-*/
+ */
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -13,6 +13,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
 
 public class Sender {
 
@@ -82,9 +86,57 @@ public class Sender {
 
    }
 
+   /**
+    * Convert this Sender's message file to an ArrayList of Packets
+    * @return ArrayList<Packet> packets
+    */
+   private ArrayList<Packet> convertMessageToPackets() {
+      ArrayList<Packet> packets = new ArrayList<Packet>();
+
+      String message = "";
+
+      String temp = null;
+
+      try {
+         while((temp = this.brFromInputFile.readLine()) != null) {
+            message += temp;
+         }
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while reading the message from the message file.");
+         System.exit(0);
+      }
+
+      // At this point, the string message should contain the entire file in one variable
+      // Separate the message by spaces so that each packet only has 1 word in it.
+      StringTokenizer tokenizer = new StringTokenizer(message, " ");
+
+      Packet p;
+      boolean sequenceNumber = false;
+      byte packetNumber = (byte) 0x1;
+      while(tokenizer.hasMoreTokens()) {
+         p = new Packet();
+         p.setSequenceNumber( (sequenceNumber) ? (byte) 0x1 : (byte) 0x0 );
+         p.setPacketID(packetNumber);
+         p.setContent(tokenizer.nextToken());
+         p.updateChecksum();
+
+         System.out.println(p);
+
+         packets.add(p);
+
+         // Update for the next packet
+         // TODO Check for a period to start a new message and sequence of packets?
+         sequenceNumber = !sequenceNumber;
+         packetNumber = (byte) (packetNumber + 0x1);
+      }
+
+      return packets;
+   }
+
    // Start the sending process
    public void run() {
       this.initialize();
+      ArrayList<Packet> packets = this.convertMessageToPackets();
 
    }
 

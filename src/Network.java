@@ -2,7 +2,7 @@
  * @author Austin Bruch
  * CNT4007C Programming Assignment 2
  * Network Class
-*/
+ */
 
 public class Network {
    
