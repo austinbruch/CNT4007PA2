@@ -92,7 +92,7 @@ public class Packet {
          bytes[6 + i] = stringBytes[i];
       }
       String toReturn = "Bytes: " + Arrays.toString(bytes) + "\n";
-      toReturn += "Sequence Number: " + ((this.sequenceNumber == (byte) 0x0) ? "0" : "1") + "\n"; 
+      toReturn += "Sequence Number: " + this.sequenceNumber + "\n"; 
       toReturn += "Packet ID: " + this.packetID + "\n";
       toReturn += "Checksum: " + this.checksum + "\n";
       toReturn += "Content: " + this.content + "\n";
