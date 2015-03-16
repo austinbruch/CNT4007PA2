@@ -104,7 +104,11 @@ public class Receiver {
                      ack.setChecksum((byte)0x0);
                      System.out.println(this.generateMessageForTerminal(this.state, totalPacketsReceived, packetFromSender, ack));
                      this.sendACKToNetwork(ack);
+                     lastSequenceNumber = packetFromSender.getSequenceNumber(); // update the new last sequence number
+                     this.toggleState(); // move on to the next state
                   }
+                  
+
                }
                
          }
@@ -158,8 +162,7 @@ public class Receiver {
        this.dosToSocket.writeBytes(new String(ack.asByteArray()) + CRLF);  
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while trying to send an ACK packet to the Network.");
-      }
-      
+      }   
    }
 
    private String generateMessageForTerminal(ReceiverEnum currentState, int totalPacketsReceived, Packet packetReceived, ACK ackToSend) {

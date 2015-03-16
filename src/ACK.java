@@ -22,6 +22,12 @@ public class ACK {
       this.checksum = (byte) 0x0;
    }
 
+   // Constructor based on an ACK in byte array notation
+   public ACK(byte[] bytes) {
+      this.sequenceNumber = bytes[0];
+      this.checksum = bytes[1];
+   }
+
    // Getters and Setters
    public byte getSequenceNumber() {
       return this.sequenceNumber;

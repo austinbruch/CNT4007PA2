@@ -71,9 +71,14 @@ public class SenderThread extends Thread {
             byte[] fromSender = inputFromSender.getBytes();
             
             if (fromSender.length == 1) {
-               if (fromSender[0] == 0xFF) {
+               if (fromSender[0] == (byte)0xFF) {
                   // -1 was sent, terminate everything
                   // TODO: write -1 to the network then close up shop
+                  try {
+                     this.dataOutputStream.writeBytes((byte)0xFF + CRLF);
+                  } catch (IOException e) {
+                     System.out.println("An I/O Error occurred while attempting to pass the Quit Signal -1 to the Receiver.");
+                  }
                }
             } else {
                Packet packetFromSender = new Packet(fromSender);
@@ -85,8 +90,6 @@ public class SenderThread extends Thread {
                } else if (networkAction.equals("CORRUPT")) {
                   corruptPacketFromSenderToReceiver(packetFromSender);
                } else if (networkAction.equals("DROP")) {
-                  // TODO send DROP signal back to Sender to simulate timeout
-                  // Do this by sending an ACK2 packet
                   dropPacketFromSenderToReceiver(packetFromSender);
                }
             }
