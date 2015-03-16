@@ -62,8 +62,6 @@ public class ReceiverThread extends Thread {
             
             if (fromReceiver.length == 1) {
                if (fromReceiver[0] == 0xFF) {
-                  // -1 was sent, terminate everything
-                  // TODO: write -1 to the network then close up shop
                   // Nothing has to happen here because the Receiver will never send -1, only receive it.
                }
             } else {
@@ -94,18 +92,18 @@ public class ReceiverThread extends Thread {
    }
 
    private void passPacketFromReceiverToSender(ACK ack) {
-      sendPacketFromReceiverToSender(new String(ack.asByteArray()));
+      sendPacketFromReceiverToSender(Network.byteArrayToHexString(ack.asByteArray()));
    }
 
    private void corruptPacketFromReceiverToSender(ACK ack) {
       ack.setChecksum((byte) (ack.getChecksum() + 0x1));
-      sendPacketFromReceiverToSender(new String(ack.asByteArray()));
+      sendPacketFromReceiverToSender(Network.byteArrayToHexString(ack.asByteArray()));
    }
 
    private void dropPacketFromReceiverToSender(ACK ack) {
       try {
          ACK drop = new ACK((byte) 0x2, (byte) 0x0); // Create an ACK packet that has a sequence number of 2, indicating DROPped packet
-         this.dataOutputStream.writeBytes(new String(drop.asByteArray())+ CRLF);
+         this.dataOutputStream.writeBytes(Network.byteArrayToHexString(drop.asByteArray())+ CRLF);
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while attemping to send an ACK2 packet indicating a DROP to the Sender.");
       }

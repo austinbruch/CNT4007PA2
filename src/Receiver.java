@@ -71,19 +71,28 @@ public class Receiver {
       String message = "";
       byte lastSequenceNumber = (byte) 0xFF;
 
-
-
       try {
          String inputFromNetwork = null;
 
          while ( (inputFromNetwork = this.brFromSocket.readLine()) != null) {
             // Don't always make a packet out of it, this could also be a -1 message indicating it's over
-            byte[] fromSender = inputFromNetwork.getBytes();
+            byte[] fromSender = Network.hexStringToByteArray(inputFromNetwork);
+            // System.out.println("Number of bytes: " + fromSender.length);
+            // for (int i = 0; i < fromSender.length; i++) {
+            //    System.out.print(fromSender[i]);
+            //    if (i < fromSender.length-1) {
+            //       System.out.print(", ");
+            //    } else {
+            //       System.out.print("\n");
+            //    }
+            // }
             
             if (fromSender.length == 1) {
-               if (fromSender[0] == 0xFF) {
+               if (fromSender[0] == (byte) 0xFF) {
                   // -1 was sent, terminate everything
                   // TODO: write -1 to the network then close up shop
+                  System.out.println("Received -1, now terminating.");
+                  System.exit(0);
                }
             } else {
                Packet packetFromSender = new Packet(fromSender);
@@ -105,6 +114,7 @@ public class Receiver {
                } else {
                   ack.setSequenceNumber(packetFromSender.getSequenceNumber());
                   ack.setChecksum((byte)0x0);
+                  // System.out.println("Test2");
                   System.out.println(this.generateMessageForTerminal(this.state, totalPacketsReceived, packetFromSender, ack));
                   this.sendACKToNetwork(ack);
                   lastSequenceNumber = packetFromSender.getSequenceNumber(); // update the new last sequence number

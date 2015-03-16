@@ -11,6 +11,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.lang.StringBuffer;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -152,34 +154,35 @@ public class Sender {
       // Generate all of the packets that will be sent
       ArrayList<Packet> packets = this.convertMessageToPackets();
 
-      // TEST simply write the first packet as a string from the byte array representation of the packet
-      // try {
-      //    this.dosToSocket.writeBytes(new String(packets.get(0).asByteArray()) + CRLF);
-      // } catch (IOException e) {
-      //    System.out.println("An I/O Error occurred while writing to the Network Socket.");
-      // }
-
+      boolean first = true;
       // Here's the FSM
       while (packets.size() != 0) {
-         // Send packet with sequence number 0
+         this.advanceState();
+         if(!first) {
+            System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "send", 0));
+         }
          this.sendPacketToNetwork(packets.get(0));
          this.totalPacketsSent++;
-         this.advanceState();
+         first = false;
 
          while (waitState(packets.get(0), (byte)0x0)) {}
          this.advanceState();
          packets.remove(0);
 
          if(packets.size() != 0) {
+            this.advanceState();
             System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "send", 1));
             this.sendPacketToNetwork(packets.get(0));
-            this.advanceState();
+            this.totalPacketsSent++;
+
 
             while (waitState(packets.get(0), (byte)0x1)) {}
             this.advanceState();
             packets.remove(0);
          } else {
+            this.advanceState();
             System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
+            this.sendTerminateToNetwork();
             break;
          }
 
@@ -191,13 +194,15 @@ public class Sender {
       try {
          String inputFromNetwork = null;
          while( (inputFromNetwork = this.brFromSocket.readLine()) != null) {
-            this.fromNetwork = new ACK(inputFromNetwork.getBytes());
+            this.fromNetwork = new ACK(Network.hexStringToByteArray(inputFromNetwork));
             boolean corrupted = this.isIncomingAckCorrupted(this.fromNetwork);
             boolean isTimeout = this.isTimeoutAck(this.fromNetwork);
             boolean rightSequenceNumber = hasSequenceNumber(this.fromNetwork, (byte) sequenceNumber);
+            byte wrongSeq = (sequenceNumber == (byte) 0x0) ? (byte) 0x1 : (byte) 0x0;
+            boolean wrongSequenceNumber = hasSequenceNumber(this.fromNetwork, wrongSeq);
 
             if (isTimeout) {
-               System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "resend", (int)sequenceNumber));
+               System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "resend", packet.getSequenceNumber()));
                this.sendPacketToNetwork(packet); // resend the packet and wait again
                this.totalPacketsSent++;
                return true; // indicate that we need to iterate again
@@ -205,6 +210,20 @@ public class Sender {
 
             if (!corrupted && !isTimeout && rightSequenceNumber) {
                return false; // The ACK indicates that the packet was delivered successfully
+            }
+
+            if (wrongSequenceNumber) {
+               System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "resend", packet.getSequenceNumber()));
+               this.sendPacketToNetwork(packet); // resend the packet and wait again
+               this.totalPacketsSent++;
+               return true;
+            }
+
+            if (corrupted) {
+               System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "resend", packet.getSequenceNumber()));
+               this.sendPacketToNetwork(packet); // resend the packet and wait again
+               this.totalPacketsSent++;
+               return true;
             }
             
          }
@@ -263,11 +282,22 @@ public class Sender {
    }
    
    private void sendPacketToNetwork(Packet packet) {
-      try {
-       this.dosToSocket.writeBytes(new String(packet.asByteArray()) + CRLF);  
+      try {        
+         // Encode the bytes in hex, then write that to a string
+         String toSend = Network.byteArrayToHexString(packet.asByteArray());
+         // System.out.println("sendPacketToNetwork string: [" + toSend + "]");
+         this.dosToSocket.writeBytes( toSend + CRLF);
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while trying to send a Packet to the Network.");
-      }   
+      } 
+   }
+
+   private void sendTerminateToNetwork() {
+      try{
+         this.dosToSocket.writeBytes(Network.byteArrayToHexString(new byte[]{(byte)0xFF}) + CRLF);
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while trying to send the Terminate Sequence to the Network.");
+      }
    }
 
    private String generateMessageForTerminal(SenderEnum currentState, int totalPacketsSent, ACK ackReceived, String action, int seqToSend) {
