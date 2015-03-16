@@ -13,6 +13,8 @@ import java.net.UnknownHostException;
 
 public class Receiver {
 
+   public static String CRLF = "\r\n";
+
    // Where to connect to the Network
    private String networkURL;
    private int networkPort;
@@ -65,6 +67,11 @@ public class Receiver {
       // Create and open all of the required connections
       this.initialize();
 
+      int totalPacketsReceived = 0;
+      String message = "";
+      byte lastSequenceNumber = 0x0;
+
+
 
       try {
          String inputFromNetwork = null;
@@ -80,8 +87,24 @@ public class Receiver {
                   }
                } else {
                   Packet packetFromSender = new Packet(fromSender);
-                  System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID());
-                  System.out.println(packetFromSender.getContent());
+                  totalPacketsReceived++;
+                  // System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID());
+                  
+                  boolean corrupted = this.isIncomingPacketCorrupted(packetFromSender);
+                  boolean wrongSequenceNumber = this.hasSequenceNumber(packetFromSender, lastSequenceNumber);
+
+                  ACK ack = new ACK();
+                  if (corrupted || wrongSequenceNumber) {
+                     ack.setSequenceNumber(lastSequenceNumber);
+                     ack.setChecksum((byte)0x0);
+                     System.out.println(this.generateMessageForTerminal(this.state, totalPacketsReceived, packetFromSender, ack));
+                     this.sendACKToNetwork(ack);
+                  } else {
+                     ack.setSequenceNumber(packetFromSender.getSequenceNumber());
+                     ack.setChecksum((byte)0x0);
+                     System.out.println(this.generateMessageForTerminal(this.state, totalPacketsReceived, packetFromSender, ack));
+                     this.sendACKToNetwork(ack);
+                  }
                }
                
          }
@@ -90,7 +113,77 @@ public class Receiver {
       }
       
    }
+
+   private void toggleState() {
+      if (this.state == ReceiverEnum.WAIT0) {
+         this.state = ReceiverEnum.WAIT1;
+      } else {
+         this.state = ReceiverEnum.WAIT0;
+      }
+   }
+
+   private boolean isIncomingPacketCorrupted(Packet packet) {
+      boolean corrupted;
+
+      int checksum = 0;
+      String content = packet.getContent();
+
+      for (int i = 0; i < content.length(); i++) {
+         checksum += content.charAt(i);
+      }
+
+      if (checksum == packet.getChecksum()) {
+         corrupted = false;
+      } else {
+         corrupted = true;
+      }
+
+      return corrupted;
+   }
+
+   private boolean hasSequenceNumber(Packet packet, byte sequenceNumber) {
+      boolean hasSeqNum;
+      
+      if (packet.getSequenceNumber() == sequenceNumber) {
+         hasSeqNum = true;
+      } else {
+         hasSeqNum = false;
+      }
+
+      return hasSeqNum;
+   }
    
+   private void sendACKToNetwork(ACK ack) {
+      try {
+       this.dosToSocket.writeBytes(new String(ack.asByteArray()) + CRLF);  
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while trying to send an ACK packet to the Network.");
+      }
+      
+   }
+
+   private String generateMessageForTerminal(ReceiverEnum currentState, int totalPacketsReceived, Packet packetReceived, ACK ackToSend) {
+      String message = "";
+
+      if (currentState == ReceiverEnum.WAIT0) {
+         message += "Waiting 0, ";
+      } else {
+         message += "Waiting 1, ";
+      }
+
+      message += Integer.toString(totalPacketsReceived) + ", ";
+
+      message += packetReceived.getSequenceNumber() + " "; 
+      message += packetReceived.getPacketID() + " "; 
+      message += packetReceived.getChecksum() + " ";
+      message += packetReceived.getContent() + ", ";
+
+      message += "ACK";
+      message += ackToSend.getSequenceNumber();
+
+      return message;
+   }
+
    // Drive the Receiver class
    // Should be called by `java Receiver [URL] [portNumber]`
    public static void main(String... args) {

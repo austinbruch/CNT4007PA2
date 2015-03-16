@@ -24,6 +24,7 @@ public class SenderThread extends Thread {
 
    private BufferedReader bufferedReader;
    private DataOutputStream dataOutputStream;
+   private DataOutputStream dataOutputStreamToSender;
 
    public SenderThread(Network network) {
       this.network = network;
@@ -39,12 +40,21 @@ public class SenderThread extends Thread {
          System.out.println("An I/O Error occurred while trying to setup a BufferedReader from the Sender Socket.");
          System.exit(0);
       }
+
       try {
          this.dataOutputStream = new DataOutputStream(this.receiverSocket.getOutputStream());
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while trying to setup a DataOutputStream to the Receiver Socket.");
          System.exit(0);
       }
+
+      try {
+         this.dataOutputStreamToSender = new DataOutputStream(this.senderSocket.getOutputStream());
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while trying to setup a DataOutputStream to the Sender Socket.");
+         System.exit(0);
+      }
+
    }
 
    @Override
@@ -77,6 +87,7 @@ public class SenderThread extends Thread {
                } else if (networkAction.equals("DROP")) {
                   // TODO send DROP signal back to Sender to simulate timeout
                   // Do this by sending an ACK2 packet
+                  dropPacketFromSenderToReceiver(packetFromSender);
                }
             }
             
@@ -104,4 +115,12 @@ public class SenderThread extends Thread {
       sendPacketFromSenderToReceiver(new String(packet.asByteArray()));
    }
 
+   private void dropPacketFromSenderToReceiver(Packet packet) {
+      try {
+         ACK drop = new ACK((byte) 0x2, (byte) 0x0); // Create an ACK packet that has a sequence number of 2, indicating DROPped packet
+         this.dataOutputStreamToSender.writeBytes(new String(drop.asByteArray())+ CRLF);
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attemping to send an ACK2 packet indicating a DROP to the Sender.");
+      }
+   }
 }

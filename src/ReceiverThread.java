@@ -64,9 +64,9 @@ public class ReceiverThread extends Thread {
                   // TODO: write -1 to the network then close up shop
                }
             }
-            Packet packetFromSender = new Packet(fromReceiver);
-            String networkAction = this.network.getRandomNetworkAction();
-            System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID() + ", " + networkAction);
+            // Packet packetFromSender = new Packet(fromReceiver);
+            // String networkAction = this.network.getRandomNetworkAction();
+            // System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID() + ", " + networkAction);
 
             // if (networkAction.equals("PASS")) {
             //    passPacketFromSenderToReceiver(packetFromSender);

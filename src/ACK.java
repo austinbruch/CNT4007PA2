@@ -47,6 +47,14 @@ public class ACK {
       
    }
 
+   public byte[] asByteArray() {
+      byte[] bytes = new byte[2];
+      bytes[0] = this.sequenceNumber;
+      bytes[1] = this.checksum;
+
+      return bytes;
+   }
+
    @Override
    public String toString() {
 
