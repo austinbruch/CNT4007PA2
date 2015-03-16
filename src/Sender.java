@@ -36,6 +36,8 @@ public class Sender {
 
    // State for State Machine
    private SenderEnum state;
+   private int totalPacketsSent;
+   private ACK fromNetwork;
 
    public static String CRLF = "\r\n";
 
@@ -54,6 +56,8 @@ public class Sender {
       this.brFromInputFile = null;
 
       this.state = SenderEnum.SEND0;
+      this.totalPacketsSent = 0;
+      this.fromNetwork = null;
    }
 
    // Setup Socket, Readers, Writers, etc.
@@ -149,11 +153,149 @@ public class Sender {
       ArrayList<Packet> packets = this.convertMessageToPackets();
 
       // TEST simply write the first packet as a string from the byte array representation of the packet
-      try {
-         this.dosToSocket.writeBytes(new String(packets.get(0).asByteArray()) + CRLF);
-      } catch (IOException e) {
-         System.out.println("An I/O Error occurred while writing to the Network Socket.");
+      // try {
+      //    this.dosToSocket.writeBytes(new String(packets.get(0).asByteArray()) + CRLF);
+      // } catch (IOException e) {
+      //    System.out.println("An I/O Error occurred while writing to the Network Socket.");
+      // }
+
+      // Here's the FSM
+      while (packets.size() != 0) {
+         // Send packet with sequence number 0
+         this.sendPacketToNetwork(packets.get(0));
+         this.totalPacketsSent++;
+         this.advanceState();
+
+         while (waitState(packets.get(0), (byte)0x0)) {}
+         this.advanceState();
+         packets.remove(0);
+
+         if(packets.size() != 0) {
+            System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "send", 1));
+            this.sendPacketToNetwork(packets.get(0));
+            this.advanceState();
+
+            while (waitState(packets.get(0), (byte)0x1)) {}
+            this.advanceState();
+            packets.remove(0);
+         } else {
+            System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
+            break;
+         }
+
       }
+   }
+
+   private boolean waitState(Packet packet, byte sequenceNumber) {
+      // Wait for an ACK from the Receiver
+      try {
+         String inputFromNetwork = null;
+         while( (inputFromNetwork = this.brFromSocket.readLine()) != null) {
+            this.fromNetwork = new ACK(inputFromNetwork.getBytes());
+            boolean corrupted = this.isIncomingAckCorrupted(this.fromNetwork);
+            boolean isTimeout = this.isTimeoutAck(this.fromNetwork);
+            boolean rightSequenceNumber = hasSequenceNumber(this.fromNetwork, (byte) sequenceNumber);
+
+            if (isTimeout) {
+               System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "resend", (int)sequenceNumber));
+               this.sendPacketToNetwork(packet); // resend the packet and wait again
+               this.totalPacketsSent++;
+               return true; // indicate that we need to iterate again
+            }
+
+            if (!corrupted && !isTimeout && rightSequenceNumber) {
+               return false; // The ACK indicates that the packet was delivered successfully
+            }
+            
+         }
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while reading from the Network Socket.");
+      }
+      return true;
+   }
+
+   private void advanceState() {
+      if (this.state == SenderEnum.SEND0) {
+         this.state = SenderEnum.WAIT0;
+      } else if (this.state == SenderEnum.WAIT0) {
+         this.state = SenderEnum.SEND1;
+      } else if (this.state == SenderEnum.SEND1) {
+         this.state = SenderEnum.WAIT1;
+      } else if (this.state == SenderEnum.WAIT1) {
+         this.state = SenderEnum.SEND0;
+      }
+   }
+
+   private boolean isIncomingAckCorrupted(ACK ack) {
+      boolean corrupted;
+
+      if (ack.getChecksum() == (byte)0x0) {
+         corrupted = false;
+      } else {
+         corrupted = true;
+      }
+
+      return corrupted;
+   }
+
+   private boolean isTimeoutAck(ACK ack) {
+      boolean isTimeout;
+
+      if (ack.getSequenceNumber() == (byte)0x2) {
+         isTimeout = true;
+      } else {
+         isTimeout = false;
+      }
+
+      return isTimeout;
+   }
+
+   private boolean hasSequenceNumber(ACK ack, byte sequenceNumber) {
+      boolean hasSeqNum;
+      
+      if (ack.getSequenceNumber() == sequenceNumber) {
+         hasSeqNum = true;
+      } else {
+         hasSeqNum = false;
+      }
+
+      return hasSeqNum;
+   }
+   
+   private void sendPacketToNetwork(Packet packet) {
+      try {
+       this.dosToSocket.writeBytes(new String(packet.asByteArray()) + CRLF);  
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while trying to send a Packet to the Network.");
+      }   
+   }
+
+   private String generateMessageForTerminal(SenderEnum currentState, int totalPacketsSent, ACK ackReceived, String action, int seqToSend) {
+      String message = "";
+
+      if (currentState == SenderEnum.WAIT0) {
+         message += "Waiting ACK0, ";
+      } else if (currentState == SenderEnum.WAIT1) {
+         message += "Waiting ACK1, ";
+      }
+
+      message += Integer.toString(totalPacketsSent) + ", ";
+
+      if (ackReceived.getSequenceNumber() == (byte)0x2) {
+         message += "DROP, ";
+      } else if (ackReceived.getSequenceNumber() == (byte)0x0) {
+         message += "ACK0, ";
+      } else if (ackReceived.getSequenceNumber() == (byte)0x1) {
+         message += "ACK1, ";
+      }
+
+      if (action.equals("none")) {
+         message += "no more packets to send";
+      } else {
+         message += action + " Packet" + Integer.toString(seqToSend);
+      }
+
+      return message;
    }
 
    // Drive the Sender class
