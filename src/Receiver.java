@@ -69,7 +69,7 @@ public class Receiver {
 
       int totalPacketsReceived = 0;
       String message = "";
-      byte lastSequenceNumber = 0x0;
+      byte lastSequenceNumber = (byte) 0xFF;
 
 
 
@@ -78,43 +78,45 @@ public class Receiver {
 
          while ( (inputFromNetwork = this.brFromSocket.readLine()) != null) {
             // Don't always make a packet out of it, this could also be a -1 message indicating it's over
-               byte[] fromSender = inputFromNetwork.getBytes();
+            byte[] fromSender = inputFromNetwork.getBytes();
+            
+            if (fromSender.length == 1) {
+               if (fromSender[0] == 0xFF) {
+                  // -1 was sent, terminate everything
+                  // TODO: write -1 to the network then close up shop
+               }
+            } else {
+               Packet packetFromSender = new Packet(fromSender);
+               totalPacketsReceived++;
+               // System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID());
                
-               if (fromSender.length == 1) {
-                  if (fromSender[0] == 0xFF) {
-                     // -1 was sent, terminate everything
-                     // TODO: write -1 to the network then close up shop
-                  }
-               } else {
-                  Packet packetFromSender = new Packet(fromSender);
-                  totalPacketsReceived++;
-                  // System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID());
-                  
-                  boolean corrupted = this.isIncomingPacketCorrupted(packetFromSender);
-                  boolean wrongSequenceNumber = this.hasSequenceNumber(packetFromSender, lastSequenceNumber);
+               boolean corrupted = this.isIncomingPacketCorrupted(packetFromSender);
+               boolean wrongSequenceNumber = this.hasSequenceNumber(packetFromSender, lastSequenceNumber);
 
-                  ACK ack = new ACK();
-                  if (corrupted || wrongSequenceNumber) {
-                     ack.setSequenceNumber(lastSequenceNumber);
-                     ack.setChecksum((byte)0x0);
-                     System.out.println(this.generateMessageForTerminal(this.state, totalPacketsReceived, packetFromSender, ack));
-                     this.sendACKToNetwork(ack);
-                  } else {
-                     ack.setSequenceNumber(packetFromSender.getSequenceNumber());
-                     ack.setChecksum((byte)0x0);
-                     System.out.println(this.generateMessageForTerminal(this.state, totalPacketsReceived, packetFromSender, ack));
-                     this.sendACKToNetwork(ack);
-                     lastSequenceNumber = packetFromSender.getSequenceNumber(); // update the new last sequence number
-                     this.toggleState(); // move on to the next state
-                     message += packetFromSender.getContent() + " ";
-                     if (packetFromSender.getContent().endsWith(".")) {
-                        // This packet is the end of the message
-                        message = message.trim();
-                        System.out.println("Message: " + message);
-                     }
+               ACK ack = new ACK();
+               if (corrupted || wrongSequenceNumber) {
+                  if (lastSequenceNumber == (byte)0xFF) {
+                     lastSequenceNumber = (byte)0x1;
+                  }
+                  ack.setSequenceNumber(lastSequenceNumber);
+                  ack.setChecksum((byte)0x0);
+                  System.out.println(this.generateMessageForTerminal(this.state, totalPacketsReceived, packetFromSender, ack));
+                  this.sendACKToNetwork(ack);
+               } else {
+                  ack.setSequenceNumber(packetFromSender.getSequenceNumber());
+                  ack.setChecksum((byte)0x0);
+                  System.out.println(this.generateMessageForTerminal(this.state, totalPacketsReceived, packetFromSender, ack));
+                  this.sendACKToNetwork(ack);
+                  lastSequenceNumber = packetFromSender.getSequenceNumber(); // update the new last sequence number
+                  this.toggleState(); // move on to the next state
+                  message += packetFromSender.getContent() + " ";
+                  if (packetFromSender.getContent().endsWith(".")) {
+                     // This packet is the end of the message
+                     message = message.trim();
+                     System.out.println("Message: " + message);
                   }
                }
-               
+            }   
          }
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while trying to read from the Network Socket.");

@@ -81,7 +81,7 @@ public class ReceiverThread extends Thread {
             }
          }
       } catch (IOException e) {
-         System.out.println("An I/O Error occurred while trying to read from the Sender Socket.");
+         System.out.println("An I/O Error occurred while trying to read from the Receiver Socket.");
       }
    }  
 
