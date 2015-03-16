@@ -106,9 +106,13 @@ public class Receiver {
                      this.sendACKToNetwork(ack);
                      lastSequenceNumber = packetFromSender.getSequenceNumber(); // update the new last sequence number
                      this.toggleState(); // move on to the next state
+                     message += packetFromSender.getContent() + " ";
+                     if (packetFromSender.getContent().endsWith(".")) {
+                        // This packet is the end of the message
+                        message = message.trim();
+                        System.out.println("Message: " + message);
+                     }
                   }
-                  
-
                }
                
          }
