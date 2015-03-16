@@ -15,6 +15,8 @@ import java.net.Socket;
 
 public class SenderThread extends Thread {
 
+   public static String CRLF = "\r\n";
+
    private Network network;
 
    private Socket senderSocket;
@@ -54,19 +56,52 @@ public class SenderThread extends Thread {
       String inputFromSender = null;
 
       try {
-         while((inputFromSender = this.bufferedReader.readLine()) != null) {
-            Packet packetFromSender = new Packet(inputFromSender.getBytes());
-            String networkAction = this.network.getRandomNetworkAction();
-            System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID() + ", " + networkAction);
+         while ((inputFromSender = this.bufferedReader.readLine()) != null) {
+            // Don't always make a packet out of it, this could also be a -1 message indicating it's over
+            byte[] fromSender = inputFromSender.getBytes();
+            
+            if (fromSender.length == 1) {
+               if (fromSender[0] == 0xFF) {
+                  // -1 was sent, terminate everything
+                  // TODO: write -1 to the network then close up shop
+               }
+            } else {
+               Packet packetFromSender = new Packet(fromSender);
+               String networkAction = this.network.getRandomNetworkAction();
+               System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID() + ", " + networkAction);
+
+               if (networkAction.equals("PASS")) {
+                  passPacketFromSenderToReceiver(packetFromSender);
+               } else if (networkAction.equals("CORRUPT")) {
+                  corruptPacketFromSenderToReceiver(packetFromSender);
+               } else if (networkAction.equals("DROP")) {
+                  // TODO send DROP signal back to Sender to simulate timeout
+                  // Do this by sending an ACK2 packet
+               }
+            }
+            
          }
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while trying to read from the Sender Socket.");
       }
 
-      
-
-
-
    }  
+
+   private void sendPacketFromSenderToReceiver(String packet) {
+      try {
+         this.dataOutputStream.writeBytes(packet + CRLF);
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attempting to pass the Sender's packet to the Receiver.");
+      }
+   }
+
+   private void passPacketFromSenderToReceiver(Packet packet) {
+      sendPacketFromSenderToReceiver(new String(packet.asByteArray())); // Forward the packet as-is (no corruption)
+   }
+
+   private void corruptPacketFromSenderToReceiver(Packet packet) {
+      packet.setChecksum((byte) (packet.getChecksum() + 0x1) ); // Corrupt the checksum by adding 1 bit
+      sendPacketFromSenderToReceiver(new String(packet.asByteArray()));
+   }
 
 }

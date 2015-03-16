@@ -64,6 +64,31 @@ public class Receiver {
    public void run() {
       // Create and open all of the required connections
       this.initialize();
+
+
+      try {
+         String inputFromNetwork = null;
+
+         while ( (inputFromNetwork = this.brFromSocket.readLine()) != null) {
+            // Don't always make a packet out of it, this could also be a -1 message indicating it's over
+               byte[] fromSender = inputFromNetwork.getBytes();
+               
+               if (fromSender.length == 1) {
+                  if (fromSender[0] == 0xFF) {
+                     // -1 was sent, terminate everything
+                     // TODO: write -1 to the network then close up shop
+                  }
+               } else {
+                  Packet packetFromSender = new Packet(fromSender);
+                  System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID());
+                  System.out.println(packetFromSender.getContent());
+               }
+               
+         }
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while trying to read from the Network Socket.");
+      }
+      
    }
    
    // Drive the Receiver class

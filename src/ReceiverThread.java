@@ -50,6 +50,36 @@ public class ReceiverThread extends Thread {
       System.out.println("Receiver started.");
 
       this.initialize();
+
+      String inputFromReceiver = null;
+
+      try {
+         while ((inputFromReceiver = this.bufferedReader.readLine()) != null) {
+            // Don't always make a packet out of it, this could also be a -1 message indicating it's over
+            byte[] fromReceiver = inputFromReceiver.getBytes();
+            
+            if (fromReceiver.length == 1) {
+               if (fromReceiver[0] == 0xFF) {
+                  // -1 was sent, terminate everything
+                  // TODO: write -1 to the network then close up shop
+               }
+            }
+            Packet packetFromSender = new Packet(fromReceiver);
+            String networkAction = this.network.getRandomNetworkAction();
+            System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID() + ", " + networkAction);
+
+            // if (networkAction.equals("PASS")) {
+            //    passPacketFromSenderToReceiver(packetFromSender);
+            // } else if (networkAction.equals("CORRUPT")) {
+            //    corruptPacketFromSenderToReceiver(packetFromSender);
+            // } else if (networkAction.equals("DROP")) {
+            //    // TODO send DROP signal back to Sender to simulate timeout
+            //    // Do this by sending an ACK2 packet
+            // }
+         }
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while trying to read from the Sender Socket.");
+      }
    }  
    
 }
