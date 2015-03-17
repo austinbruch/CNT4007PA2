@@ -10,12 +10,12 @@
    - [X] Sender
    - [X] SenderEnum
    - [X] SenderThread
-- [ ] Send ACKs in hex-encoded format
-   - [ ] Receiver
-      - [ ] Sending the ACK to the Network
-   - [ ] ReceiverThread
-      - [ ] Receiving the ACK in the Network
+- [X] Send ACKs in hex-encoded format
+   - [X] Receiver
+      - [X] Sending the ACK to the Network
+   - [X] ReceiverThread
+      - [X] Receiving the ACK in the Network
       - [X] then forwarding it to the Sender
    - [X] Sender
-      - [ ] Receiving the ACK and interpreting it
+      - [X] Receiving the ACK and interpreting it
 - [X] Sender state for no more packets to send is incorrect

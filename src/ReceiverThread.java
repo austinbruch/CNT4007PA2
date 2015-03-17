@@ -65,7 +65,7 @@ public class ReceiverThread extends Thread {
 
       try {
          while ((inputFromReceiver = this.bufferedReader.readLine()) != null) {
-            byte[] fromReceiver = inputFromReceiver.getBytes(); // Get the bytes sent from the Receiver
+            byte[] fromReceiver = Network.hexStringToByteArray(inputFromReceiver); // Decode to get the bytes sent from the Receiver
             
             ACK ackFromReceiver = new ACK(fromReceiver);             // Create an ACK from the bytes sent from the Receiver
             String networkAction = Network.getRandomNetworkAction(); // Determine which network action will occur

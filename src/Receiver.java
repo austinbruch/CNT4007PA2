@@ -172,7 +172,7 @@ public class Receiver {
    // Sends the specified ACK packet to the Network
    private void sendACKToNetwork(ACK ack) {
       try {
-       this.dosToSocket.writeBytes(new String(ack.asByteArray()) + CRLF);  
+       this.dosToSocket.writeBytes(Network.byteArrayToHexString(ack.asByteArray()) + CRLF);  
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while trying to send an ACK packet to the Network.");
       }   
