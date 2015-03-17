@@ -6,19 +6,14 @@
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.lang.StringBuffer;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
-
 
 public class Sender {
 
@@ -33,16 +28,19 @@ public class Sender {
 
    // Input Message File
    private String messageFileName;
-   // private File messageFile;
    private BufferedReader brFromInputFile;
 
    // State for State Machine
    private SenderEnum state;
+
+   // Keeps track of how many packets have been sent by this sender; scoped by instance
    private int totalPacketsSent;
+
+   // Keeps track of the most recently acquired ACK packet from the Network
    private ACK fromNetwork;
 
+   // Carriage Return Line Feed Constant
    public static String CRLF = "\r\n";
-
 
    // Constructor
    public Sender(String networkURL, int networkPort, String messageFileName) {
@@ -54,12 +52,11 @@ public class Sender {
       this.brFromSocket = null;
       this.dosToSocket = null;
 
-      // this.messageFile = null;
       this.brFromInputFile = null;
 
-      this.state = SenderEnum.SEND0;
-      this.totalPacketsSent = 0;
-      this.fromNetwork = null;
+      this.state = SenderEnum.SEND0; // Initially start at the first state, sending the 0 packet
+      this.totalPacketsSent = 0; // Haven't sent any packets yet
+      this.fromNetwork = null; // Haven't received any ACKs yet
    }
 
    // Setup Socket, Readers, Writers, etc.
@@ -104,7 +101,7 @@ public class Sender {
     * @return ArrayList<Packet> packets
     */
    private ArrayList<Packet> convertMessageToPackets() {
-      ArrayList<Packet> packets = new ArrayList<Packet>();
+      ArrayList<Packet> packets = new ArrayList<Packet>(); // Container for the new Packet objects
 
       String message = "";
 
@@ -124,23 +121,22 @@ public class Sender {
       StringTokenizer tokenizer = new StringTokenizer(message, " ");
 
       Packet p;
-      boolean sequenceNumber = false;
+      boolean sequenceNumber = false; // Alternate false --> true to simulate 0 and 1
       byte packetNumber = (byte) 0x1;
+
+      // Keep doing this until there aren't any more packets to create
       while(tokenizer.hasMoreTokens()) {
          p = new Packet();
-         p.setSequenceNumber( (sequenceNumber) ? (byte) 0x1 : (byte) 0x0 );
+         p.setSequenceNumber( (sequenceNumber) ? (byte) 0x1 : (byte) 0x0 ); // Start with 0, then go to 1
          p.setPacketID(packetNumber);
-         p.setContent(tokenizer.nextToken());
-         p.updateChecksum();
-
-         // System.out.println(p);
-
-         packets.add(p);
+         p.setContent(tokenizer.nextToken()); 
+         p.updateChecksum(); // Make the checksum reflect the content of the Packet
+         packets.add(p); // Add the newly created packet to the ArrayList of Packets
 
          // Update for the next packet
          // TODO Check for a period to start a new message and sequence of packets?
-         sequenceNumber = !sequenceNumber;
-         packetNumber = (byte) (packetNumber + 0x1);
+         sequenceNumber = !sequenceNumber; // Toggle the sequence number 
+         packetNumber = (byte) (packetNumber + 0x1); // Add 1 to the packet number
       }
 
       return packets;
@@ -155,38 +151,48 @@ public class Sender {
       ArrayList<Packet> packets = this.convertMessageToPackets();
 
       boolean first = true;
+      boolean doneFlag = false;
       // Here's the FSM
       while (packets.size() != 0) {
          this.advanceState();
          if(!first) {
+            // Only print this message out when it's not the first Packet
             System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "send", 0));
          }
-         this.sendPacketToNetwork(packets.get(0));
-         this.totalPacketsSent++;
-         first = false;
+         this.sendPacketToNetwork(packets.get(0)); // Send the Packet
+         this.totalPacketsSent++; // Increment how many Packets we've sent
+         first = false; // Any time after this, it's not the first anymore
 
-         while (waitState(packets.get(0), (byte)0x0)) {}
-         this.advanceState();
-         packets.remove(0);
+         while (waitState(packets.get(0), (byte)0x0)) {} // Wait for a response from the Network
+         this.advanceState(); // Once we get an acceptable response, advance to sending the next Packet, if there are any
+         packets.remove(0); // Remove the leading Packet, so that the new first Packet is the Packet that needs to be sent next
 
-         if(packets.size() != 0) {
-            this.advanceState();
+         if (packets.size() != 0) { // If there are any more Packets to send
+            this.advanceState(); // Advance to the next state
+            // We now need to send the next Packet, so generate the console message
             System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "send", 1));
-            this.sendPacketToNetwork(packets.get(0));
-            this.totalPacketsSent++;
+            this.sendPacketToNetwork(packets.get(0)); // Send the next Packet
+            this.totalPacketsSent++; // Increment how many Packets we've sent
 
-
-            while (waitState(packets.get(0), (byte)0x1)) {}
-            this.advanceState();
-            packets.remove(0);
-         } else {
-            this.advanceState();
+            while (waitState(packets.get(0), (byte)0x1)) {} // Wait for an response from the network
+            this.advanceState(); // Once we receive an acceptable response, advance to sending the next Packet, if there are any
+            packets.remove(0); // Remove the leading Packet, so that the new first Packet is the Packet that needs to be sent next
+         } else { // There are no more packets to send
+            this.advanceState(); // Advance to the next state
             System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
             this.sendTerminateToNetwork();
+            doneFlag = true;
             break;
          }
 
       }
+
+      if (!doneFlag) {
+         System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
+         this.sendTerminateToNetwork();
+         doneFlag = true;
+      }
+      
    }
 
    private boolean waitState(Packet packet, byte sequenceNumber) {
