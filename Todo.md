@@ -1,4 +1,3 @@
 TODO
 ====
-[ ] Thorough Commenting
-[ ] 
+- [ ] Thorough Commenting
