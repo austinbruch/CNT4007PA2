@@ -5,8 +5,8 @@ TODO
    - [X] Network
    - [ ] Packet
    - [ ] Receiver
-   - [ ] ReceiverEnum
+   - [X] ReceiverEnum
    - [ ] ReceiverThread
    - [X] Sender
-   - [ ] SenderEnum
+   - [X] SenderEnum
    - [ ] SenderThread
