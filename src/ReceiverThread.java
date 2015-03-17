@@ -17,19 +17,26 @@ public class ReceiverThread extends Thread {
 
    public static String CRLF = "\r\n";
 
+   // The connected Network instance
    private Network network;
 
+   // Sockets
    private Socket receiverSocket;
    private Socket senderSocket;
 
+   // Reader from the Receiver Socket
+   // Writer to the Sender Socket
    private BufferedReader bufferedReader;
    private DataOutputStream dataOutputStream;
 
+   // Constructor
    public ReceiverThread(Network network) {
       this.network = network;
    }
 
+   // Initialize the sockets and the readers and writers
    private void initialize() {
+      // Get references to the sockets
       this.senderSocket = this.network.getSenderSocket();
       this.receiverSocket = this.network.getReceiverSocket();
 
@@ -47,35 +54,29 @@ public class ReceiverThread extends Thread {
       }
    }
 
+   // What executes when this Thread is executed
    @Override
    public void run() {
       System.out.println("Receiver started.");
-
+      // Initialize this Thread
       this.initialize();
 
-      String inputFromReceiver = null;
+      String inputFromReceiver = null; // Input from the Receiver
 
       try {
          while ((inputFromReceiver = this.bufferedReader.readLine()) != null) {
-            // Don't always make a packet out of it, this could also be a -1 message indicating it's over
-            byte[] fromReceiver = inputFromReceiver.getBytes();
+            byte[] fromReceiver = inputFromReceiver.getBytes(); // Get the bytes sent from the Receiver
             
-            if (fromReceiver.length == 1) {
-               if (fromReceiver[0] == 0xFF) {
-                  // Nothing has to happen here because the Receiver will never send -1, only receive it.
-               }
-            } else {
-               ACK ackFromReceiver = new ACK(fromReceiver);
-               String networkAction = Network.getRandomNetworkAction();
-               System.out.println("Received: ACK" + ackFromReceiver.getSequenceNumber() + ", " + networkAction);
+            ACK ackFromReceiver = new ACK(fromReceiver);             // Create an ACK from the bytes sent from the Receiver
+            String networkAction = Network.getRandomNetworkAction(); // Determine which network action will occur
+            System.out.println("Received: ACK" + ackFromReceiver.getSequenceNumber() + ", " + networkAction); // Print console message
 
-               if (networkAction.equals("PASS")) {
-                  passPacketFromReceiverToSender(ackFromReceiver);
-               } else if (networkAction.equals("CORRUPT")) {
-                  corruptPacketFromReceiverToSender(ackFromReceiver);
-               } else if (networkAction.equals("DROP")) {
-                  dropPacketFromReceiverToSender(ackFromReceiver);
-               }
+            if (networkAction.equals("PASS")) {
+               passPacketFromReceiverToSender(ackFromReceiver);      // Pass the ACK through to the Sender
+            } else if (networkAction.equals("CORRUPT")) {
+               corruptPacketFromReceiverToSender(ackFromReceiver);   // Corrupt the ACK and send it to the Sender
+            } else if (networkAction.equals("DROP")) {  
+               dropPacketFromReceiverToSender(ackFromReceiver);      // Drop the ACK packet
             }
          }
       } catch (IOException e) {
@@ -83,6 +84,7 @@ public class ReceiverThread extends Thread {
       }
    }  
 
+   // Sends the specified ACK packet to the Sender socket
    private void sendPacketFromReceiverToSender(String ack) {
       try {
          this.dataOutputStream.writeBytes(ack + CRLF);
@@ -91,19 +93,23 @@ public class ReceiverThread extends Thread {
       }
    }
 
+   // Pass the specified ACK packet to the Sender socket
    private void passPacketFromReceiverToSender(ACK ack) {
-      sendPacketFromReceiverToSender(Network.byteArrayToHexString(ack.asByteArray()));
+      sendPacketFromReceiverToSender(Network.byteArrayToHexString(ack.asByteArray()));    // Encode the ACK for safe transfer
    }
 
+   // Corrupt the specified ACK packet then send it to the Sender socket
    private void corruptPacketFromReceiverToSender(ACK ack) {
-      ack.setChecksum((byte) (ack.getChecksum() + 0x1));
-      sendPacketFromReceiverToSender(Network.byteArrayToHexString(ack.asByteArray()));
+      ack.setChecksum((byte) (ack.getChecksum() + 0x1)); // Corrupt the ACK by adding 1 to the checksum
+      sendPacketFromReceiverToSender(Network.byteArrayToHexString(ack.asByteArray()));    // Encode the ACK for safe transfer
    }
 
+   // Drop the ACK packet
+   // We simulate a Dropped packet by sending an ACK2 (ACK with sequence number 2) to the Sender
    private void dropPacketFromReceiverToSender(ACK ack) {
       try {
          ACK drop = new ACK((byte) 0x2, (byte) 0x0); // Create an ACK packet that has a sequence number of 2, indicating DROPped packet
-         this.dataOutputStream.writeBytes(Network.byteArrayToHexString(drop.asByteArray())+ CRLF);
+         this.dataOutputStream.writeBytes(Network.byteArrayToHexString(drop.asByteArray())+ CRLF);    // Encode the ACK for safe transfer
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while attemping to send an ACK2 packet indicating a DROP to the Sender.");
       }

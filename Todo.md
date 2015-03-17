@@ -1,19 +1,21 @@
-TODO
-====
+#TODO
+
 - [ ] Thorough Commenting
    - [X] ACK
    - [X] Network
    - [X] Packet
    - [X] Receiver
    - [X] ReceiverEnum
-   - [ ] ReceiverThread
+   - [X] ReceiverThread
    - [X] Sender
    - [X] SenderEnum
-   - [ ] SenderThread
+   - [X] SenderThread
 - [ ] Send ACKs in hex-encoded format
    - [ ] Receiver
-      -  Sending the ACK to the Network
+      - [ ] Sending the ACK to the Network
    - [ ] ReceiverThread
-      -  Receiving the ACK in the Network, then forwarding it to the Sender
-   - [ ] Sender
-      -  Receiving the ACK and interpreting it
+      - [ ] Receiving the ACK in the Network
+      - [X] then forwarding it to the Sender
+   - [X] Sender
+      - [ ] Receiving the ACK and interpreting it
+- [ ] Sender state for no more packets to send is incorrect
