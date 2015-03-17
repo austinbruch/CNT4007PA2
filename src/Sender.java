@@ -188,6 +188,7 @@ public class Sender {
       }
       // If the last Packet had sequence number 1, terminate the Network and Receiver
       if (!doneFlag) {
+         this.advanceState();
          System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
          this.sendTerminateToNetwork();
          doneFlag = true;

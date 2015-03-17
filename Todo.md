@@ -1,6 +1,6 @@
 #TODO
 
-- [ ] Thorough Commenting
+- [X] Thorough Commenting
    - [X] ACK
    - [X] Network
    - [X] Packet
@@ -18,4 +18,4 @@
       - [X] then forwarding it to the Sender
    - [X] Sender
       - [ ] Receiving the ACK and interpreting it
-- [ ] Sender state for no more packets to send is incorrect
+- [X] Sender state for no more packets to send is incorrect
