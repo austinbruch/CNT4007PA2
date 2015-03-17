@@ -104,7 +104,7 @@ public class SenderThread extends Thread {
                //       System.out.print(", ");
                //   }
                // }
-               String networkAction = this.network.getRandomNetworkAction();
+               String networkAction = Network.getRandomNetworkAction();
                System.out.println("Received: Packet" + packetFromSender.getSequenceNumber() + ", " + packetFromSender.getPacketID() + ", " + networkAction);
 
                if (networkAction.equals("PASS")) {

@@ -23,14 +23,6 @@ public class Network {
    private int port;
 
    // Constructor
-   public Network() {
-      this.listenSocket = null;
-      this.senderSocket = null;
-      this.receiverSocket = null;
-      this.port = 0;
-   }
-
-   // Constructor
    public Network(int port) {
       this.listenSocket = null;
       this.senderSocket = null;
@@ -38,6 +30,7 @@ public class Network {
       this.port = port;
    }
 
+   // Getters for Sender and Receiver sockets
    public Socket getSenderSocket() {
       return this.senderSocket;
    }
@@ -46,6 +39,7 @@ public class Network {
       return this.receiverSocket;
    }
 
+   // Initialize the ServerSocket to listen for incoming connections
    private void initialize() {
       try {
          this.listenSocket = new ServerSocket(port);
@@ -56,41 +50,42 @@ public class Network {
       System.out.println("Network listening on port " + Integer.toString(this.port));
    }
 
+   // Run the Network, which accepts a Receiver and a Sender (only two total client sockets)
    public void run() throws IOException {
-      this.initialize();
+      this.initialize(); // Initialize the ServerSocket
 
-      int numberOfConnections = 0;
+      int numberOfConnections = 0; // Keeps track of the number of connections that have been made
 
-      ReceiverThread receiverThread = null;
-      SenderThread senderThread = null;
+      ReceiverThread receiverThread = null; // Thread that handles data from the Receiver
+      SenderThread senderThread = null; // Thread that handles data from the Sender
 
       while (true) {
-         // if(numberOfConnections == 2) {
-         //    break;
-         // }
-
-         Socket socket = this.listenSocket.accept();
+         Socket socket = this.listenSocket.accept(); // Block until an incoming connection occurs
 
          if (numberOfConnections == 0) {
             this.receiverSocket = socket; // connect the receiver first
-            receiverThread = new ReceiverThread(this);
+            receiverThread = new ReceiverThread(this); // Create the Receiver Thread with reference to the Network instance
          } else if (numberOfConnections == 1) {
             this.senderSocket = socket; // connect the sender second
-            senderThread = new SenderThread(this);
-            receiverThread.start();
+            senderThread = new SenderThread(this); // Create the Sender Thread with reference to the Network instance
+            receiverThread.start(); // Only now do we start both threads
             senderThread.start();
          }
 
          numberOfConnections++;
-
       }
    }
 
-   protected String getRandomNetworkAction() {
-      Random random = new Random();
-      String pass = "PASS", corrupt = "CORRUPT", drop = "DROP";
-      String networkAction;
-      double rand = random.nextDouble();
+   // Returns a Network Action at "random"
+   // Probabilities are: 
+   //    PASS : 0.5
+   //    CORRUPT : 0.25
+   //    DROP : 0.25
+   protected static String getRandomNetworkAction() {
+      Random random = new Random(); // Random number generator
+      String pass = "PASS", corrupt = "CORRUPT", drop = "DROP"; // All possible network actions
+      String networkAction; // The resulting network action
+      double rand = random.nextDouble(); // Get a random number between 0 and 1
       
       if (rand <= 0.5) {
          networkAction = pass;
@@ -101,18 +96,27 @@ public class Network {
       }
 
       return networkAction;
-      // return "PASS";
    }
 
-   protected static byte[] hexStringToByteArray(String s) {
-      int len = s.length();
-      byte[] data = new byte[len / 2];
-      for (int i = 0; i < len; i += 2) {
-         data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i+1), 16));
+   // Converts a string made up of hexadecimal characters into a byte array
+   // Each set of 2 characters is mapped to a new byte in the byte array
+   protected static byte[] hexStringToByteArray(String hexString) {
+      int length = hexString.length();
+      
+      if (length % 2 == 1) {
+         hexString = "0" + hexString; // Pad the string with a leading 0 if needed
+         length++;
       }
-      return data;
+      
+      byte[] bytes = new byte[length / 2];
+      for (int i = 0; i < length; i += 2) {
+         bytes[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4) + (Character.digit(hexString.charAt(i+1), 16)));
+      }
+      return bytes;
    }
 
+   // Converts a byte array to a String of hexadecimal characters
+   // Each byte in the array is mapped to 2 hex characters
    protected static String byteArrayToHexString(byte[] bytes) {
       StringBuffer stringBuffer = new StringBuffer();
       for(int i=0; i < bytes.length; i++){ 

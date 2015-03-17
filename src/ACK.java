@@ -8,6 +8,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class ACK {
+
+   // Instance variable
    private byte sequenceNumber;
    private byte checksum;
    
@@ -17,6 +19,7 @@ public class ACK {
       this.checksum = checksum;
    }
 
+   // Default constructor
    public ACK() {
       this.sequenceNumber = (byte) 0x0;
       this.checksum = (byte) 0x0;
@@ -45,14 +48,7 @@ public class ACK {
       this.checksum = checksum;
    }
 
-   /**
-    * Update this ACK's checksum
-    * TODO: not sure how the checksum is created for an ACK
-    */
-   public void updateChecksum() {
-      
-   }
-
+   // Returns this ACK represented by an array of bytes
    public byte[] asByteArray() {
       byte[] bytes = new byte[2];
       bytes[0] = this.sequenceNumber;
@@ -61,12 +57,11 @@ public class ACK {
       return bytes;
    }
 
+   // Overriding the toString for debugging purposes
    @Override
    public String toString() {
 
-      byte[] bytes = new byte[2];
-      bytes[0] = this.sequenceNumber;
-      bytes[1] = this.checksum;
+      byte[] bytes = this.asByteArray();
 
       String toReturn = "Bytes: " + Arrays.toString(bytes) + "\n";
       toReturn += "Sequence Number: " + this.sequenceNumber + "\n"; 

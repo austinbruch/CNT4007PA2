@@ -66,7 +66,7 @@ public class ReceiverThread extends Thread {
                }
             } else {
                ACK ackFromReceiver = new ACK(fromReceiver);
-               String networkAction = this.network.getRandomNetworkAction();
+               String networkAction = Network.getRandomNetworkAction();
                System.out.println("Received: ACK" + ackFromReceiver.getSequenceNumber() + ", " + networkAction);
 
                if (networkAction.equals("PASS")) {

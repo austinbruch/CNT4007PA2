@@ -1,8 +1,8 @@
 TODO
 ====
 - [ ] Thorough Commenting
-   - [ ] ACK
-   - [ ] Network
+   - [X] ACK
+   - [X] Network
    - [ ] Packet
    - [ ] Receiver
    - [ ] ReceiverEnum
