@@ -8,3 +8,7 @@ Questions
 
 3) What state should the Sender be in when it prints to the console that there are no more packets to send?
 
+4) Is it ok to require that the Receiver connects to the Network before the Sender connects?
+
+
+

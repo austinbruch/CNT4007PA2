@@ -180,21 +180,24 @@ public class Sender {
          } else { // There are no more packets to send
             this.advanceState(); // Advance to the next state
             System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
-            this.sendTerminateToNetwork();
-            doneFlag = true;
-            break;
+            this.sendTerminateToNetwork(); // Terminate the Network
+            doneFlag = true; 
+            break; // Break out of this sending loop
          }
 
       }
-
+      // If the last Packet had sequence number 1, terminate the Network and Receiver
       if (!doneFlag) {
          System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
          this.sendTerminateToNetwork();
          doneFlag = true;
       }
-      
+
    }
 
+   // Waits for an ACK from the Network
+   // Returns false if the Sender received the correct ACK and can move on to the next Packet
+   // Returns true if a timeout occurred, or the received ACK was corrupted or for the wrong sequence number
    private boolean waitState(Packet packet, byte sequenceNumber) {
       // Wait for an ACK from the Receiver
       try {
@@ -239,6 +242,7 @@ public class Sender {
       return true;
    }
 
+   // Used to advance the state of this Sender
    private void advanceState() {
       if (this.state == SenderEnum.SEND0) {
          this.state = SenderEnum.WAIT0;
@@ -251,6 +255,9 @@ public class Sender {
       }
    }
 
+   // Determines if the incoming ACK packet is corrupted or not
+   // Since ACKs are basic, the checksum of an ACK is supposed to be 0
+   // If it's nonzero, corruption has occurred
    private boolean isIncomingAckCorrupted(ACK ack) {
       boolean corrupted;
 
@@ -263,6 +270,7 @@ public class Sender {
       return corrupted;
    }
 
+   // Determines if the incoming ACK packet is a Timeout ACK (ACK2)
    private boolean isTimeoutAck(ACK ack) {
       boolean isTimeout;
 
@@ -275,6 +283,7 @@ public class Sender {
       return isTimeout;
    }
 
+   // Determines if the incoming ACK packet has the specified sequence number
    private boolean hasSequenceNumber(ACK ack, byte sequenceNumber) {
       boolean hasSeqNum;
       
@@ -287,36 +296,47 @@ public class Sender {
       return hasSeqNum;
    }
    
+   // Send the specified Packet to the Network
    private void sendPacketToNetwork(Packet packet) {
       try {        
-         // Encode the bytes in hex, then write that to a string
+         // Encode the bytes in hex, then write that hex  to a string
          String toSend = Network.byteArrayToHexString(packet.asByteArray());
-         // System.out.println("sendPacketToNetwork string: [" + toSend + "]");
-         this.dosToSocket.writeBytes( toSend + CRLF);
+         this.dosToSocket.writeBytes( toSend + CRLF); // Send the hex string to the Network, followed by a CRLF since BufferedReader#readLine is used
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while trying to send a Packet to the Network.");
       } 
    }
 
+   // Send the special terminate byte to the Network (-1 or 0xFF)
    private void sendTerminateToNetwork() {
       try{
-         this.dosToSocket.writeBytes(Network.byteArrayToHexString(new byte[]{(byte)0xFF}) + CRLF);
+         // Simply following convention throughout the code of converting a byte array to a hex-encoded string
+         this.dosToSocket.writeBytes(Network.byteArrayToHexString(new byte[]{(byte)0xFF}) + CRLF); 
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while trying to send the Terminate Sequence to the Network.");
       }
    }
 
+   // Creates the message to be sent to the console based on:
+   //    the current state of the Sender
+   //    how many packets have been sent so far
+   //    which kind of ACK was received
+   //    which action will be performed next (from the Sender FSM)
+   //    which sequence number will be sent next, if any
    private String generateMessageForTerminal(SenderEnum currentState, int totalPacketsSent, ACK ackReceived, String action, int seqToSend) {
       String message = "";
 
+      // The Sender only prints messages when it is in Waiting states
       if (currentState == SenderEnum.WAIT0) {
          message += "Waiting ACK0, ";
       } else if (currentState == SenderEnum.WAIT1) {
          message += "Waiting ACK1, ";
       }
 
+      // Concatentate how many packets have been sent thus far
       message += Integer.toString(totalPacketsSent) + ", ";
 
+      // Concatentate which kind of ACK was received (ACK0, ACK1, or ACK2 (DROP))
       if (ackReceived.getSequenceNumber() == (byte)0x2) {
          message += "DROP, ";
       } else if (ackReceived.getSequenceNumber() == (byte)0x0) {
@@ -325,6 +345,7 @@ public class Sender {
          message += "ACK1, ";
       }
 
+      // Concatenate the specific action message
       if (action.equals("none")) {
          message += "no more packets to send";
       } else {
@@ -337,6 +358,10 @@ public class Sender {
    // Drive the Sender class
    // Should be called via `java Sender [URL] [portNumber] [messageFileName]`
    public static void main(String... args) {
+      if (args.length != 3) {
+         System.out.println("Usage:\njava Sender [URL] [portNumber] [messageFileName]");
+         System.exit(0);
+      }
       String url = args[0];
       int port = 0;
       try {
