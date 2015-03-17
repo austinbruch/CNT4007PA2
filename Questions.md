@@ -9,6 +9,14 @@ Questions
 3) What state should the Sender be in when it prints to the console that there are no more packets to send?
 
 4) Is it ok to require that the Receiver connects to the Network before the Sender connects?
+   -  Possible workaround:
+      -  have sender send the line "sender" when it connects
+      -  have receiver send the line "receiver" when it connects
+      -  have the network determine which socket belongs to which, and setup the threads appropriately
+   -  Second possible workaround:
+      -  have all three programs specify 1 port number, as usual
+      -  in reality, the receiver program (and Network respectively) uses the specified port number + 1 for receiver
+      -  that way, Network listens on 2 ports, 1 dedicated to the receiver, the other dedicated to the sender
 
 
 
