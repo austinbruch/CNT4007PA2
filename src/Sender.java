@@ -94,6 +94,13 @@ public class Sender {
          System.exit(0);
       }
 
+      try {
+         this.dosToSocket.writeBytes("sender" + CRLF);
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attempting to identify the Sender with the Network.");
+         System.exit(0);
+      }
+
    }
 
    /**
