@@ -63,6 +63,7 @@ public class Receiver {
          System.exit(0);  
       }
 
+      // Identify self as a Receiver
       try {
          this.dosToSocket.writeBytes("receiver" + CRLF);
       } catch (IOException e) {

@@ -94,6 +94,7 @@ public class Sender {
          System.exit(0);
       }
 
+      // Identify self as a Sender
       try {
          this.dosToSocket.writeBytes("sender" + CRLF);
       } catch (IOException e) {

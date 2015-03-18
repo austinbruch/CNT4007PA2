@@ -56,13 +56,11 @@ public class Network {
    public void run() throws IOException {
       this.initialize(); // Initialize the ServerSocket
 
-      int numberOfConnections = 0; // Keeps track of the number of connections that have been made
-
       ReceiverThread receiverThread = null; // Thread that handles data from the Receiver
       SenderThread senderThread = null; // Thread that handles data from the Sender
 
-      boolean haveSender = false;
-      boolean haveReceiver = false;
+      boolean haveSender = false;      // Keep track of whether we've opened a socket to the Sender
+      boolean haveReceiver = false;    // Keep track of whether we've opened a socket to the Receiver
 
       try {
          while (true) {
@@ -73,39 +71,26 @@ public class Network {
 
             while ( (identification = bufferedReader.readLine()) != null ) {
                if (identification.equals("sender")) {
-                  this.senderSocket = socket;   // connect the Sender socket
-                  haveSender = true;
-                  if(haveSender && haveReceiver) {
-                     senderThread = new SenderThread(this);
+                  this.senderSocket = socket;                     // connect the Sender socket
+                  haveSender = true;                              // the Sender has connected
+                  if(haveSender && haveReceiver) {                // If both Sender and Receiver have connected
+                     senderThread = new SenderThread(this);       // Setup the Threads
                      receiverThread = new ReceiverThread(this);
-                     senderThread.start();
+                     senderThread.start();                        // Start the Threads
                      receiverThread.start();
                   }
                } else if (identification.equals("receiver")) {
-                  this.receiverSocket = socket; // connect the Receiver socket
-                  haveReceiver = true;
-                  if(haveSender && haveReceiver) {
-                     senderThread = new SenderThread(this);
+                  this.receiverSocket = socket;                   // connect the Receiver socket
+                  haveReceiver = true;                            // the Receiver has connected
+                  if(haveSender && haveReceiver) {                // If both Sender and Receiver have connected
+                     senderThread = new SenderThread(this);       // Setup the Threads
                      receiverThread = new ReceiverThread(this);
-                     senderThread.start();
+                     senderThread.start();                        // Start the Threads
                      receiverThread.start();
                   }
                }
                break;
             }
-
-
-            // if (numberOfConnections == 0) {
-            //    this.receiverSocket = socket; // connect the receiver first
-            //    receiverThread = new ReceiverThread(this); // Create the Receiver Thread with reference to the Network instance
-            // } else if (numberOfConnections == 1) {
-            //    this.senderSocket = socket; // connect the sender second
-            //    senderThread = new SenderThread(this); // Create the Sender Thread with reference to the Network instance
-            //    receiverThread.start(); // Only now do we start both threads
-            //    senderThread.start();
-            // }
-
-            numberOfConnections++;
          }
       } finally {
          try {
