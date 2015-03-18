@@ -114,6 +114,13 @@ public class Sender {
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while reading the message from the message file.");
          System.exit(0);
+      } finally {
+         try {
+            this.brFromInputFile.close();
+         } catch (IOException e) {
+            System.out.println("An I/O Error occurred while attempting to close the BufferedReader for the message file.");
+            System.exit(0);
+         }
       }
 
       // At this point, the string message should contain the entire file in one variable
@@ -180,7 +187,8 @@ public class Sender {
          } else { // There are no more packets to send
             this.advanceState(); // Advance to the next state
             System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
-            this.sendTerminateToNetwork(); // Terminate the Network
+            this.sendTerminateToNetwork();   // Terminate the Network
+            this.terminate();                // Close down the socket
             doneFlag = true; 
             break; // Break out of this sending loop
          }
@@ -191,6 +199,7 @@ public class Sender {
          this.advanceState();
          System.out.println(this.generateMessageForTerminal(this.state, this.totalPacketsSent, this.fromNetwork, "none", -1));
          this.sendTerminateToNetwork();
+         this.terminate();  // Close down the socket
          doneFlag = true;
       }
 
@@ -354,6 +363,16 @@ public class Sender {
       }
 
       return message;
+   }
+
+   // Called when the Sender is terminating
+   // Closes down the Socket to the Network, which closes all readers and writers
+   private void terminate() {
+      try {
+         this.networkSocket.close();
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attempting to close the socket to the Network.");
+      }
    }
 
    // Drive the Sender class

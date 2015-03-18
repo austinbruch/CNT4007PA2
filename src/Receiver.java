@@ -84,6 +84,7 @@ public class Receiver {
                if (fromSender[0] == (byte) 0xFF) {
                   // -1 was sent, terminate everything
                   System.out.println("Received -1, now terminating.");
+                  this.terminate(); // Close up the Socket
                   System.exit(0);
                }
             } else { // Attempt to interpret the incoming byte array as a Packet
@@ -203,6 +204,16 @@ public class Receiver {
       message += ackToSend.getSequenceNumber(); // Concatenate which type of ACK is being sent
 
       return message;
+   }
+
+   // Called when the Receiver is terminating
+   // Closes down the Socket to the Network, which closes all readers and writers
+   private void terminate() {
+      try {
+         this.networkSocket.close();
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attempting to close the socket to the Network.");
+      }
    }
 
    // Drive the Receiver class

@@ -114,4 +114,20 @@ public class ReceiverThread extends Thread {
          System.out.println("An I/O Error occurred while attemping to send an ACK2 packet indicating a DROP to the Sender.");
       }
    }
+
+   // Called when the ReceiverThread is terminating
+   // Closes down the both Sockets, which closes all readers and writers
+   private void terminate() {
+      try {
+         this.senderSocket.close();
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attempting to close the socket to the Sender.");
+      }
+
+      try {
+         this.receiverSocket.close();
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attempting to close the socket to the Receiver.");
+      }
+   }
 }

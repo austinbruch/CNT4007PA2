@@ -59,20 +59,29 @@ public class Network {
       ReceiverThread receiverThread = null; // Thread that handles data from the Receiver
       SenderThread senderThread = null; // Thread that handles data from the Sender
 
-      while (true) {
-         Socket socket = this.listenSocket.accept(); // Block until an incoming connection occurs
+      try {
+         while (true) {
+            Socket socket = this.listenSocket.accept(); // Block until an incoming connection occurs
 
-         if (numberOfConnections == 0) {
-            this.receiverSocket = socket; // connect the receiver first
-            receiverThread = new ReceiverThread(this); // Create the Receiver Thread with reference to the Network instance
-         } else if (numberOfConnections == 1) {
-            this.senderSocket = socket; // connect the sender second
-            senderThread = new SenderThread(this); // Create the Sender Thread with reference to the Network instance
-            receiverThread.start(); // Only now do we start both threads
-            senderThread.start();
+            if (numberOfConnections == 0) {
+               this.receiverSocket = socket; // connect the receiver first
+               receiverThread = new ReceiverThread(this); // Create the Receiver Thread with reference to the Network instance
+            } else if (numberOfConnections == 1) {
+               this.senderSocket = socket; // connect the sender second
+               senderThread = new SenderThread(this); // Create the Sender Thread with reference to the Network instance
+               receiverThread.start(); // Only now do we start both threads
+               senderThread.start();
+            }
+
+            numberOfConnections++;
          }
-
-         numberOfConnections++;
+      } finally {
+         try {
+            this.listenSocket.close();
+            System.exit(0);
+         } catch (IOException e) {
+            System.out.println("An I/O Error occurred while attempting to close the Server Socket.");
+         }
       }
    }
 

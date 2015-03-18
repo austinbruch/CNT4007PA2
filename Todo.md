@@ -19,3 +19,5 @@
    - [X] Sender
       - [X] Receiving the ACK and interpreting it
 - [X] Sender state for no more packets to send is incorrect
+- [ ] Implement mechanism to no longer require that the Receiver connects before the Sender
+- [X] Add in Socket cleanup code

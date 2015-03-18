@@ -88,9 +88,12 @@ public class SenderThread extends Thread {
                      this.dataOutputStream.writeBytes(Network.byteArrayToHexString(new byte[]{(byte)0xFF}) + CRLF); // Following convention of encoding a byte array with the termination code
                   } catch (IOException e) {
                      System.out.println("An I/O Error occurred while attempting to pass the Quit Signal -1 to the Receiver.");
-                  } 
-                  System.out.println("Received -1, now terminating.");
-                  System.exit(0);
+                  } finally {
+                     this.terminate();
+                     System.out.println("Received -1, now terminating.");
+                     System.exit(0);   
+                  }
+                  
                }
             } else { // Interpret the bytes as a Packet
                Packet packetFromSender = new Packet(fromSender);           // Create the packet
@@ -141,5 +144,21 @@ public class SenderThread extends Thread {
       } catch (IOException e) {
          System.out.println("An I/O Error occurred while attemping to send an ACK2 packet indicating a DROP to the Sender.");
       } 
+   }
+
+   // Called when the SenderThread is terminating
+   // Closes down both Sockets, which closes all readers and writers
+   private void terminate() {
+      try {
+         this.senderSocket.close();
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attempting to close the socket to the Sender.");
+      }
+
+      try {
+         this.receiverSocket.close();
+      } catch (IOException e) {
+         System.out.println("An I/O Error occurred while attempting to close the socket to the Receiver.");
+      }
    }
 }
