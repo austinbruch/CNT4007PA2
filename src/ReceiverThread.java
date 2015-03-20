@@ -80,7 +80,7 @@ public class ReceiverThread extends Thread {
             }
          }
       } catch (IOException e) {
-         if (e instanceof java.net.SocketException && e.getMessage().equals("Socket Closed")) {
+         if (e instanceof java.net.SocketException && e.getMessage().equals("Socket closed")) {
             // This will trigger in the edge case where the ReceiverThread tries to read from the Socket after it has closed
          } else {
             System.out.println("An I/O Error occurred while trying to read from the Receiver Socket.");   
